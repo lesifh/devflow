@@ -1,13 +1,19 @@
 from fastapi import FastAPI
 
 from app.database import create_db_and_tables
-from app import models
+from app import models  # noqa: F401
+from app.routers import users
+
+
 app = FastAPI(title="DevFlow API")
 
+app.include_router(users.router)
+
+
 @app.on_event("startup")
-# 服务启动时执行 create_db_and_tables()
 def on_startup():
     create_db_and_tables()
+
 
 @app.get("/")
 def read_root():
