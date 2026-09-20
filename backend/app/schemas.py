@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+from datetime import datetime
+from pydantic import BaseModel
 
 # UserRegister / UserLogin：请求体格式
 
@@ -6,6 +8,7 @@ from pydantic import BaseModel
 
 # TokenResponse：登录成功返回的格式
 
+# users相关schema
 class UserRegister(BaseModel):
     username: str
     password: str
@@ -25,3 +28,22 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserPublic
+
+# Project相关Schema
+class ProjectCreate(BaseModel):
+    name: str
+    description: str | None = None
+
+
+class ProjectUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+
+
+class ProjectPublic(BaseModel):
+    id: int
+    name: str
+    description: str | None
+    owner_id: int
+    created_at: datetime
+

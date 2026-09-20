@@ -12,3 +12,12 @@ class User(SQLModel, table=True):
     # hashed_password：永远存哈希，不存明文
     created_at: datetime = Field(default_factory=datetime.utcnow)
     # created_at：默认当前时间
+
+
+class Project(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
+    description: str | None = None
+    # 指向users的外键
+    owner_id: int = Field(foreign_key="user.id", index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)

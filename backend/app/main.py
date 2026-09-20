@@ -2,12 +2,14 @@ from fastapi import FastAPI
 
 from app.database import create_db_and_tables
 from app import models  # noqa: F401
-from app.routers import users
+from app.routers import users, projects
 
 
 app = FastAPI(title="DevFlow API")
 
 app.include_router(users.router)
+app.include_router(projects.router)
+
 
 
 @app.on_event("startup")
