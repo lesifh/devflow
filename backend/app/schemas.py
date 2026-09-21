@@ -107,3 +107,13 @@ class WorkItemPublic(BaseModel):
     order: int
     created_at: datetime
     updated_at: datetime
+
+
+# 看板接口
+# 现有的 GET /projects/{id}/items?status=todo 只能一次查一个状态。前端要看板
+# 得发 4 次请求（todo、doing、review、done），还得合并数据。
+class BoardResponse(BaseModel):
+    todo: list[WorkItemPublic]
+    doing: list[WorkItemPublic]
+    review: list[WorkItemPublic]
+    done: list[WorkItemPublic]  

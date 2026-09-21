@@ -7,6 +7,13 @@ from app.models import Project, Sprint, WorkItem, User
 from app.schemas import WorkItemCreate, WorkItemUpdate, WorkItemPublic
 from app.routers.sprints import get_owned_project
 
+from app.schemas import (
+    WorkItemCreate,
+    WorkItemUpdate,
+    WorkItemPublic,
+    BoardResponse,
+)
+
 router = APIRouter(tags=["work-items"])
 
 
@@ -124,3 +131,30 @@ def delete_item(
     session.delete(item)
     session.commit()
     return None
+
+# 看板接口
+@router.get("/projects/{project_id}/board", response_model=BoardResponse)
+def get_board(
+    project_id: int,
+    sprint_id: int | None = Query(default=None),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """看板视图：按状态分组返回工作项"""
+    # 校验项目归属，失败就抛异常
+    get_owned_project(project_id, current_user, session)
+
+    statement = select(WorkItem).where(WorkItem.project_id == project_id)
+    if sprint_id is not None:
+        statement = statement.where(WorkItem.sprint_id == sprint_id)
+    statement = statement.order_by(WorkItem.order, WorkItem.id)
+
+    items = session.exec(statement).all()
+
+    # 按状态分组
+    board = {"todo": [], "doing": [], "review": [], "done": []}
+    for item in items:
+        if item.status in board:
+            board[item.status].append(item)
+
+    return board
