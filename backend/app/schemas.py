@@ -73,3 +73,37 @@ class SprintPublic(BaseModel):
     status: str
     created_at: datetime
 
+
+class WorkItemCreate(BaseModel):
+    type: str = "task"
+    title: str
+    description: str | None = None
+    priority: str = "medium"
+    sprint_id: int | None = None
+    assignee_id: int | None = None
+
+
+class WorkItemUpdate(BaseModel):
+    type: str | None = None
+    title: str | None = None
+    description: str | None = None
+    status: str | None = None
+    priority: str | None = None
+    sprint_id: int | None = None
+    assignee_id: int | None = None
+    order: int | None = None
+
+
+class WorkItemPublic(BaseModel):
+    id: int
+    project_id: int
+    sprint_id: int | None
+    type: str
+    title: str
+    description: str | None
+    status: str
+    priority: str
+    assignee_id: int | None
+    order: int
+    created_at: datetime
+    updated_at: datetime
