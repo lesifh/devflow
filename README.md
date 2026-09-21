@@ -46,13 +46,13 @@
 
 ### 后端
 
-\`\`\`bash
+```bash
 cd backend
 python -m venv venv
 .\venv\Scripts\Activate.ps1   # Windows
 pip install -r requirements.txt
 uvicorn app.main:app --reload
-\`\`\`
+```
 
 打开 http://127.0.0.1:8000/docs 查看 API 文档。
 
