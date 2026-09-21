@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, date
 from pydantic import BaseModel
 
 # UserRegister / UserLogin：请求体格式
@@ -33,17 +33,43 @@ class TokenResponse(BaseModel):
 class ProjectCreate(BaseModel):
     name: str
     description: str | None = None
+# 创建时，迭代默认是 planning（计划中），不让客户端指定
 
 
 class ProjectUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
-
+# 更新时，才允许改状态（比如从 planning → active → closed
 
 class ProjectPublic(BaseModel):
     id: int
     name: str
     description: str | None
     owner_id: int
+    created_at: datetime
+
+class SprintCreate(BaseModel):
+    name: str
+    goal: str | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+
+
+class SprintUpdate(BaseModel):
+    name: str | None = None
+    goal: str | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    status: str | None = None
+
+
+class SprintPublic(BaseModel):
+    id: int
+    project_id: int
+    name: str
+    goal: str | None
+    start_date: date | None
+    end_date: date | None
+    status: str
     created_at: datetime
 
