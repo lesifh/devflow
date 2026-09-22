@@ -1,10 +1,11 @@
-<p align="center">
-  <img src="assets/logo.svg" alt="DevFlow Logo" width="120" />
-</p>
-
-<h1 align="center">DevFlow</h1>
-
+<table align="center">
+  <tr>
+    <td><img src="assets/logo.svg" alt="DevFlow Logo" width="60" /></td>
+    <td style="font-size: 32px; font-weight: bold; padding-left: 12px;">DevFlow</td>
+  </tr>
+</table>
 <p align="center">一个面向软件团队的敏捷项目管理系统</p>
+
 
 支持项目管理、迭代规划（Sprint）、工作项跟踪（需求/任务/缺陷）和看板视图。
 
