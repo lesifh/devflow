@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from sqlmodel import SQLModel, Field
 
 
@@ -10,7 +10,7 @@ class User(SQLModel, table=True):
     # username：加了索引，唯一
     hashed_password: str
     # hashed_password：永远存哈希，不存明文
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     # created_at：默认当前时间
 
 
@@ -20,7 +20,7 @@ class Project(SQLModel, table=True):
     description: str | None = None
     # 指向users的外键
     owner_id: int = Field(foreign_key="user.id", index=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 # Sprint指Scrum团队完成一定数量工作所需的短暂、固定的周期。Sprint是Scrum和敏捷的核心
 # 相当于一个迭代周期 比如一周
@@ -33,7 +33,7 @@ class Sprint(SQLModel, table=True):
     start_date: date | None = None # 起止日期（可选）
     end_date: date | None = None 
     status: str = "planning"  # 三种状态：planning 计划中 / active 进行中 / closed 已关闭
-    created_at: datetime = Field(default_factory=datetime.utcnow) # 创建时间
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc)) # 创建时间
 
 # 每一次迭代包含的具体的工作项（需求/任务/缺陷）
 class WorkItem(SQLModel, table=True):
@@ -50,5 +50,5 @@ class WorkItem(SQLModel, table=True):
     assignee_id: int | None = Field(default=None, foreign_key="user.id") # 负责人（可为空）
     order: int = 0 # 同列内排序，默认 0
 
-    created_at: datetime = Field(default_factory=datetime.utcnow) # 创建时间
-    updated_at: datetime = Field(default_factory=datetime.utcnow) # 更新时间
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc)) # 创建时间
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc)) # 更新时间

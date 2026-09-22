@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from app.database import create_db_and_tables
@@ -7,18 +9,19 @@ from app import models  # noqa: F401
 from app.routers import users, projects, sprints, work_items
 
 
-app = FastAPI(title="DevFlow API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 启动时
+    create_db_and_tables()
+    yield
+    # 关闭时（这里不需要做什么）
+
+app = FastAPI(title="DevFlow API", lifespan=lifespan)
 
 app.include_router(users.router)
 app.include_router(projects.router)
 app.include_router(sprints.router)
 app.include_router(work_items.router)
-
-
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
-
 
 @app.get("/")
 def read_root():

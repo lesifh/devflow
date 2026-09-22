@@ -14,6 +14,8 @@ from app.schemas import (
     BoardResponse,
 )
 
+from datetime import datetime, timezone   
+
 router = APIRouter(tags=["work-items"])
 
 
@@ -108,8 +110,8 @@ def update_item(
     for key, value in update_data.items():
         setattr(item, key, value)
 
-    from datetime import datetime
-    item.updated_at = datetime.utcnow()
+
+    item.updated_at = datetime.now(timezone.utc)
 
     session.add(item)
     session.commit()
