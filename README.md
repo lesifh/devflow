@@ -1,9 +1,8 @@
-<table align="center">
-  <tr>
-    <td><img src="assets/logo.svg" alt="DevFlow Logo" width="60" /></td>
-    <td style="font-size: 32px; font-weight: bold; padding-left: 12px;">DevFlow</td>
-  </tr>
-</table>
+<p align="center">
+  <img src="assets/logo.svg" alt="DevFlow Logo" width="60" style="vertical-align: middle; margin-right: 12px;" />
+  <span style="font-size: 32px; font-weight: bold; vertical-align: middle;">DevFlow</span>
+</p>
+
 <p align="center">一个面向软件团队的敏捷项目管理系统</p>
 
 
