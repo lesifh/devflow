@@ -1,4 +1,4 @@
-<table align="center">
+<table align="center" border="0">
   <tr>
     <td><img src="assets/logo.svg" alt="DevFlow Logo" width="60" /></td>
     <td style="font-size: 32px; font-weight: bold; padding-left: 12px;">DevFlow</td>
