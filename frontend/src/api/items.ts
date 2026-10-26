@@ -19,3 +19,9 @@ export async function createWorkItem(projectId: number, data: {
   const res = await client.post<WorkItem>(`/projects/${projectId}/items`, data)
   return res.data
 }
+
+// 更新工作项（用于拖动改状态）
+export async function updateWorkItem(itemId: number, data: { status?: string, order?: number }): Promise<WorkItem> {
+  const res = await client.put<WorkItem>(`/items/${itemId}`, data)
+  return res.data
+}

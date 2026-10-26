@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type DragEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getBoard, createWorkItem } from '../api/items'
+import { getBoard, createWorkItem, updateWorkItem } from '../api/items'
 import type { Board as BoardType } from '../types'
 
 export default function Board() {
@@ -11,6 +11,7 @@ export default function Board() {
 
   const [board, setBoard] = useState<BoardType>({ todo: [], doing: [], review: [], done: [] })
   const [loading, setLoading] = useState(true)
+  
   const [title, setTitle] = useState('')
   const [type, setType] = useState('task')
 
@@ -33,13 +34,81 @@ export default function Board() {
     e.preventDefault()
     if (!title.trim()) return
     try {
-      await createWorkItem(projectId, { title, type, sprint_id: sprintIdNum })
+      await createWorkItem(projectId, {
+        title,
+        type,
+        sprint_id: sprintIdNum,
+      })
       setTitle('')
       loadBoard()
     } catch (err) {
       alert('创建失败')
     }
   }
+
+  // ================= 拖拽逻辑 =================
+
+  // 1. 开始拖拽
+  function handleDragStart(e: DragEvent, itemId: number) {
+    e.dataTransfer.setData('itemId', itemId.toString())
+    // 视觉反馈：拖动时稍微透明一点
+    (e.currentTarget as HTMLDivElement).style.opacity = '0.4'
+  }
+
+  // 2. 结束拖拽（恢复透明度）
+  function handleDragEnd(e: DragEvent) {
+    (e.currentTarget as HTMLDivElement).style.opacity = '1'
+  }
+
+  // 3. 拖到目标列放下
+  async function handleDrop(e: DragEvent, newStatus: string) {
+    e.preventDefault()
+    const itemIdStr = e.dataTransfer.getData('itemId')
+    if (!itemIdStr) return
+    const itemId = Number(itemIdStr)
+
+    // 乐观更新 UI：最稳妥的过滤方式（确保原来的列一定会删掉）
+    setBoard((prev) => {
+      let movedItem: any = null
+      
+      const newBoard = {
+        todo: prev.todo.filter((i) => {
+          if (i.id === itemId) { movedItem = i; return false }
+          return true
+        }),
+        doing: prev.doing.filter((i) => {
+          if (i.id === itemId) { movedItem = i; return false }
+          return true
+        }),
+        review: prev.review.filter((i) => {
+          if (i.id === itemId) { movedItem = i; return false }
+          return true
+        }),
+        done: prev.done.filter((i) => {
+          if (i.id === itemId) { movedItem = i; return false }
+          return true
+        }),
+      }
+
+      // 如果找到了，把它加到新的列里
+      if (movedItem) {
+        movedItem.status = newStatus as any
+        newBoard[newStatus as keyof typeof newBoard].push(movedItem)
+      }
+
+      return newBoard
+    })
+
+    // 发送请求给后端保存
+    try {
+      await updateWorkItem(itemId, { status: newStatus })
+    } catch (err) {
+      alert('更新失败，请刷新页面')
+      loadBoard()
+    }
+  }
+
+  // ================= UI =================
 
   const columns = [
     { key: 'todo', label: '待办 (To Do)' },
@@ -50,11 +119,13 @@ export default function Board() {
 
   return (
     <div style={{ padding: 24, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* 顶部导航 */}
       <div style={{ marginBottom: 20 }}>
         <button onClick={() => navigate(`/projects/${projectId}`)}>← 返回迭代列表</button>
         <h1 style={{ display: 'inline-block', marginLeft: 20 }}>看板 (迭代 ID: {sprintIdNum})</h1>
       </div>
 
+      {/* 新建工作项表单 */}
       <form onSubmit={handleCreate} style={{ marginBottom: 30, background: '#f5f5f5', padding: 16, borderRadius: 8 }}>
         <input
           value={title}
@@ -70,23 +141,53 @@ export default function Board() {
         <button type="submit" style={{ padding: '8px 16px' }}>添加工作项</button>
       </form>
 
+      {/* 看板主体 */}
       {loading ? (
         <p>加载中...</p>
       ) : (
         <div style={{ display: 'flex', gap: 16, flex: 1, overflowX: 'auto' }}>
           {columns.map((col) => (
-            <div key={col.key} style={{ flex: 1, minWidth: 250, background: '#f0f2f5', borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column' }}>
+            <div 
+              key={col.key} 
+              // 关键：让这列可以接收拖拽
+              onDragOver={(e) => e.preventDefault()} 
+              onDrop={(e) => handleDrop(e, col.key)}
+              style={{ 
+                flex: 1, 
+                minWidth: 250, 
+                background: '#f0f2f5', 
+                borderRadius: 8, 
+                padding: 12,
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
               <h3 style={{ marginTop: 0, borderBottom: '1px solid #ddd', paddingBottom: 8 }}>
                 {col.label} ({board[col.key].length})
               </h3>
               
               <div style={{ flex: 1, overflowY: 'auto' }}>
                 {board[col.key].map((item) => (
-                  <div key={item.id} style={{
-                    background: '#fff', padding: 12, marginBottom: 8, borderRadius: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                    borderLeft: item.type === 'bug' ? '4px solid #ef4444' : item.type === 'story' ? '4px solid #3b82f6' : '4px solid #10b981'
-                  }}>
-                    <div style={{ fontSize: 12, color: '#888', marginBottom: 4, textTransform: 'uppercase' }}>{item.type}</div>
+                  <div 
+                    key={item.id} 
+                    // 关键：允许这个卡片拖动
+                    draggable={true}
+                    onDragStart={(e) => handleDragStart(e, item.id)}
+                    onDragEnd={handleDragEnd}
+                    style={{
+                      background: '#fff',
+                      padding: 12,
+                      marginBottom: 8,
+                      borderRadius: 6,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                      cursor: 'grab',
+                      borderLeft: item.type === 'bug' ? '4px solid #ef4444' : 
+                                 item.type === 'story' ? '4px solid #3b82f6' : '4px solid #10b981'
+                    }}
+                  >
+                    <div style={{ fontSize: 12, color: '#888', marginBottom: 4, textTransform: 'uppercase' }}>
+                      {item.type}
+                    </div>
                     <div style={{ fontWeight: 'bold' }}>{item.title}</div>
                   </div>
                 ))}
