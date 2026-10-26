@@ -20,8 +20,19 @@ export async function createWorkItem(projectId: number, data: {
   return res.data
 }
 
-// 更新工作项（用于拖动改状态）
-export async function updateWorkItem(itemId: number, data: { status?: string, order?: number }): Promise<WorkItem> {
+// 获取单个工作项
+export async function getWorkItem(itemId: number): Promise<WorkItem> {
+  const res = await client.get<WorkItem>(`/items/${itemId}`)
+  return res.data
+}
+
+// 删除工作项
+export async function deleteWorkItem(itemId: number): Promise<void> {
+  await client.delete(`/items/${itemId}`)
+}
+
+// 更新工作项
+export async function updateWorkItem(itemId: number, data: Partial<WorkItem>): Promise<WorkItem> {
   const res = await client.put<WorkItem>(`/items/${itemId}`, data)
   return res.data
 }

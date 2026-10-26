@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type DragEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getBoard, createWorkItem, updateWorkItem } from '../api/items'
 import type { Board as BoardType } from '../types'
+import ItemModal from '../components/ItemModal'
 
 export default function Board() {
   const { id, sprintId } = useParams()
@@ -14,6 +15,9 @@ export default function Board() {
   
   const [title, setTitle] = useState('')
   const [type, setType] = useState('task')
+
+  // 控制弹窗的状态
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null)
 
   async function loadBoard() {
     try {
@@ -46,18 +50,15 @@ export default function Board() {
     }
   }
 
-  // ================= 拖拽逻辑 =================
-
   // 1. 开始拖拽
   function handleDragStart(e: DragEvent, itemId: number) {
     e.dataTransfer.setData('itemId', itemId.toString())
-    // 视觉反馈：拖动时稍微透明一点
-    (e.currentTarget as HTMLDivElement).style.opacity = '0.4'
+    ;(e.currentTarget as HTMLDivElement).style.opacity = '0.4'
   }
 
-  // 2. 结束拖拽（恢复透明度）
+  // 2. 结束拖拽
   function handleDragEnd(e: DragEvent) {
-    (e.currentTarget as HTMLDivElement).style.opacity = '1'
+    ;(e.currentTarget as HTMLDivElement).style.opacity = '1'
   }
 
   // 3. 拖到目标列放下
@@ -67,10 +68,8 @@ export default function Board() {
     if (!itemIdStr) return
     const itemId = Number(itemIdStr)
 
-    // 乐观更新 UI：最稳妥的过滤方式（确保原来的列一定会删掉）
     setBoard((prev) => {
       let movedItem: any = null
-      
       const newBoard = {
         todo: prev.todo.filter((i) => {
           if (i.id === itemId) { movedItem = i; return false }
@@ -90,16 +89,13 @@ export default function Board() {
         }),
       }
 
-      // 如果找到了，把它加到新的列里
       if (movedItem) {
         movedItem.status = newStatus as any
         newBoard[newStatus as keyof typeof newBoard].push(movedItem)
       }
-
       return newBoard
     })
 
-    // 发送请求给后端保存
     try {
       await updateWorkItem(itemId, { status: newStatus })
     } catch (err) {
@@ -107,8 +103,6 @@ export default function Board() {
       loadBoard()
     }
   }
-
-  // ================= UI =================
 
   const columns = [
     { key: 'todo', label: '待办 (To Do)' },
@@ -149,17 +143,11 @@ export default function Board() {
           {columns.map((col) => (
             <div 
               key={col.key} 
-              // 关键：让这列可以接收拖拽
               onDragOver={(e) => e.preventDefault()} 
               onDrop={(e) => handleDrop(e, col.key)}
               style={{ 
-                flex: 1, 
-                minWidth: 250, 
-                background: '#f0f2f5', 
-                borderRadius: 8, 
-                padding: 12,
-                display: 'flex',
-                flexDirection: 'column'
+                flex: 1, minWidth: 250, background: '#f0f2f5', borderRadius: 8, padding: 12,
+                display: 'flex', flexDirection: 'column'
               }}
             >
               <h3 style={{ marginTop: 0, borderBottom: '1px solid #ddd', paddingBottom: 8 }}>
@@ -170,17 +158,13 @@ export default function Board() {
                 {board[col.key].map((item) => (
                   <div 
                     key={item.id} 
-                    // 关键：允许这个卡片拖动
                     draggable={true}
                     onDragStart={(e) => handleDragStart(e, item.id)}
                     onDragEnd={handleDragEnd}
+                    onClick={() => setSelectedItemId(item.id)} // 👈 点击打开弹窗
                     style={{
-                      background: '#fff',
-                      padding: 12,
-                      marginBottom: 8,
-                      borderRadius: 6,
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                      cursor: 'grab',
+                      background: '#fff', padding: 12, marginBottom: 8, borderRadius: 6, boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                      cursor: 'pointer',
                       borderLeft: item.type === 'bug' ? '4px solid #ef4444' : 
                                  item.type === 'story' ? '4px solid #3b82f6' : '4px solid #10b981'
                     }}
@@ -195,6 +179,15 @@ export default function Board() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* 渲染弹窗 */}
+      {selectedItemId !== null && (
+        <ItemModal 
+          itemId={selectedItemId} 
+          onClose={() => setSelectedItemId(null)} 
+          onRefresh={loadBoard} 
+        />
       )}
     </div>
   )
