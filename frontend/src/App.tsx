@@ -1,24 +1,23 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Projects from './pages/Projects'
+import ProjectDetail from './pages/ProjectDetail'
+import Board from './pages/Board' // 引入看板
 import PrivateRoute from './components/PrivateRoute'
 
 function App() {
   return (
     <Routes>
-      {/* 根路径跳转到项目页，由 PrivateRoute 决定是拦截还是放行 */}
       <Route path="/" element={<Navigate to="/projects" replace />} />
-      
       <Route path="/login" element={<Login />} />
       
-      {/* 需要登录才能访问的页面 */}
-      <Route
-        path="/projects"
-        element={
-          <PrivateRoute>
-            <Projects />
-          </PrivateRoute>
-        }
+      <Route path="/projects" element={<PrivateRoute><Projects /></PrivateRoute>} />
+      
+      <Route path="/projects/:id" element={<PrivateRoute><ProjectDetail /></PrivateRoute>} />
+      
+      <Route 
+        path="/projects/:id/sprints/:sprintId" 
+        element={<PrivateRoute><Board /></PrivateRoute>} 
       />
     </Routes>
   )

@@ -55,7 +55,7 @@ export default function Projects() {
         <h2>我的项目</h2>
         <div>
           欢迎，{user?.username} {' '}
-          <button onClick={handleLogout}>退出</button>
+          <button onClick={handleLogout} style={{ padding: '4px 8px' }}>退出</button>
         </div>
       </div>
 
@@ -78,7 +78,20 @@ export default function Projects() {
       ) : (
         <div>
           {projects.map((p) => (
-            <div key={p.id} style={{ border: '1px solid #ccc', padding: 16, marginBottom: 10, borderRadius: 6 }}>
+            <div 
+              key={p.id} 
+              onClick={() => navigate(`/projects/${p.id}`)}
+              style={{ 
+                border: '1px solid #ccc', 
+                padding: 16, 
+                marginBottom: 10, 
+                borderRadius: 6,
+                cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#f9f9f9'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
               <h3>{p.name}</h3>
               <p style={{ color: '#666' }}>{p.description || '无描述'}</p>
             </div>
