@@ -10,3 +10,7 @@ export async function createProject(data: { name: string; description?: string }
   const res = await client.post<Project>('/projects', data)
   return res.data
 }
+
+export async function deleteProject(projectId: number): Promise<void> {
+  await client.delete(`/projects/${projectId}`)
+}
