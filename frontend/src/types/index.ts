@@ -8,6 +8,7 @@ export interface Project {
   name: string
   description: string | null
   owner_id: number
+  is_archived: boolean // 👈 新增
   created_at: string
 }
 
@@ -36,6 +37,8 @@ export interface WorkItem {
   status: WorkItemStatus
   priority: WorkItemPriority
   assignee_id: number | null
+  assignee_name?: string | null
+  project_name?: string | null
   order: number
   created_at: string
   updated_at: string

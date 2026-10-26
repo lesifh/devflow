@@ -1,14 +1,7 @@
-from pydantic import BaseModel
 from datetime import datetime, date
 from pydantic import BaseModel
 
-# UserRegister / UserLogin：请求体格式
 
-# UserPublic：响应里返回的用户信息，绝不包含密码
-
-# TokenResponse：登录成功返回的格式
-
-# users相关schema
 class UserRegister(BaseModel):
     username: str
     password: str
@@ -29,24 +22,26 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     user: UserPublic
 
-# Project相关Schema
+
 class ProjectCreate(BaseModel):
     name: str
     description: str | None = None
-# 创建时，迭代默认是 planning（计划中），不让客户端指定
 
 
 class ProjectUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
-# 更新时，才允许改状态（比如从 planning → active → closed
+    is_archived: bool | None = None # 👈 新增
+
 
 class ProjectPublic(BaseModel):
     id: int
     name: str
     description: str | None
     owner_id: int
+    is_archived: bool # 👈 新增
     created_at: datetime
+
 
 class SprintCreate(BaseModel):
     name: str
@@ -104,16 +99,15 @@ class WorkItemPublic(BaseModel):
     status: str
     priority: str
     assignee_id: int | None
+    assignee_name: str | None = None
+    project_name: str | None = None
     order: int
     created_at: datetime
     updated_at: datetime
 
 
-# 看板接口
-# 现有的 GET /projects/{id}/items?status=todo 只能一次查一个状态。前端要看板
-# 得发 4 次请求（todo、doing、review、done），还得合并数据。
 class BoardResponse(BaseModel):
     todo: list[WorkItemPublic]
     doing: list[WorkItemPublic]
     review: list[WorkItemPublic]
-    done: list[WorkItemPublic]  
+    done: list[WorkItemPublic]

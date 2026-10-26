@@ -47,6 +47,14 @@ export default function Login() {
             </Button>
           </Form.Item>
         </Form>
+
+        {/* 👈 这里是真正的跳转链接 */}
+        <div style={{ textAlign: 'center', fontSize: 14 }}>
+          <Text type="secondary">还没有账号？</Text>
+          <Link to="/register" style={{ color: '#4f46e5', textDecoration: 'none', fontWeight: 500, marginLeft: 4 }}>
+            立即注册
+          </Link>
+        </div>
       </Card>
     </div>
   )
