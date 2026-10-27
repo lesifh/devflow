@@ -3,7 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Layout, Button, Input, Select, message, Typography, Space, Tag, Empty } from 'antd'
 import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons'
 import { getBoard, createWorkItem, updateWorkItem } from '../api/items'
-import type { Board as BoardType } from '../types'
+import { getUsers } from '../api/auth'
+import ItemModal from '../components/ItemModal'
+import type { Board as BoardType, User } from '../types'
 
 const { Header, Content } = Layout
 const { Title } = Typography
@@ -16,8 +18,13 @@ export default function Board() {
 
   const [board, setBoard] = useState<BoardType>({ todo: [], doing: [], review: [], done: [] })
   const [loading, setLoading] = useState(true)
+  
   const [title, setTitle] = useState('')
   const [type, setType] = useState('task')
+  const [assigneeId, setAssigneeId] = useState<number | undefined>(undefined)
+  const [users, setUsers] = useState<User[]>([])
+  
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null)
 
   async function loadBoard() {
     try {
@@ -32,13 +39,17 @@ export default function Board() {
 
   useEffect(() => {
     loadBoard()
+    getUsers().then(setUsers).catch(console.error)
   }, [projectId, sprintIdNum])
 
   async function handleCreate() {
     if (!title.trim()) return
     try {
-      await createWorkItem(projectId, { title, type, sprint_id: sprintIdNum })
+      await createWorkItem(projectId, { 
+        title, type, sprint_id: sprintIdNum, assignee_id: assigneeId 
+      })
       setTitle('')
+      setAssigneeId(undefined)
       message.success('添加成功')
       loadBoard()
     } catch (err) {
@@ -105,12 +116,23 @@ export default function Board() {
             value={title} 
             onChange={e => setTitle(e.target.value)}
             onPressEnter={handleCreate}
-            style={{ width: 400, height: 40 }}
+            style={{ width: 300, height: 40 }}
           />
           <Select value={type} onChange={setType} style={{ width: 120, height: 40 }}>
-            <Select.Option value="story">需求</Select.Option>
-            <Select.Option value="task">任务</Select.Option>
-            <Select.Option value="bug">缺陷</Select.Option>
+            <Select.Option value="story">需求 (Story)</Select.Option>
+            <Select.Option value="task">任务 (Task)</Select.Option>
+            <Select.Option value="bug">缺陷 (Bug)</Select.Option>
+          </Select>
+          <Select 
+            placeholder="指派给..." 
+            value={assigneeId} 
+            onChange={setAssigneeId} 
+            allowClear
+            style={{ width: 140, height: 40 }}
+          >
+            {users.map(u => (
+              <Select.Option key={u.id} value={u.id}>{u.username}</Select.Option>
+            ))}
           </Select>
           <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate} style={{ height: 40 }}>
             添加
@@ -124,15 +146,8 @@ export default function Board() {
               onDragOver={(e) => e.preventDefault()} 
               onDrop={(e) => handleDrop(e, col.key)}
               style={{ 
-                flex: 1,
-                minWidth: 300,
-                background: '#fafafa', 
-                borderRadius: 12, 
-                padding: 16, 
-                display: 'flex', 
-                flexDirection: 'column', 
-                border: '1px solid #f0f0f0',
-                overflowY: 'hidden' 
+                flex: 1, minWidth: 300, background: '#fafafa', borderRadius: 12, padding: 16, 
+                display: 'flex', flexDirection: 'column', border: '1px solid #f0f0f0', overflowY: 'hidden' 
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, fontWeight: 600, fontSize: 16, color: '#262626', flexShrink: 0 }}>
@@ -150,13 +165,10 @@ export default function Board() {
                       draggable={true}
                       onDragStart={(e) => handleDragStart(e, item.id)}
                       onDragEnd={handleDragEnd}
+                      onClick={() => setSelectedItemId(item.id)}
                       style={{
-                        background: '#fff', 
-                        padding: 20,
-                        marginBottom: 16, 
-                        borderRadius: 8,
-                        boxShadow: '0 2px 5px rgba(0,0,0,0.06)', 
-                        cursor: 'grab',
+                        background: '#fff', padding: 20, marginBottom: 16, borderRadius: 8,
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.06)', cursor: 'pointer',
                         borderLeft: item.type === 'bug' ? '4px solid #ff4d4f' : 
                                    item.type === 'story' ? '4px solid #1890ff' : '4px solid #52c41a'
                       }}
@@ -164,9 +176,21 @@ export default function Board() {
                       <div style={{ fontSize: 13, color: '#8c8c8c', marginBottom: 12, display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
                         <span>{item.type.toUpperCase()}</span>
                       </div>
-                      <div style={{ fontWeight: 600, color: '#141414', fontSize: 16, lineHeight: 1.5 }}>
+                      <div style={{ fontWeight: 600, color: '#141414', fontSize: 16, lineHeight: 1.5, marginBottom: 12 }}>
                         {item.title}
                       </div>
+                      
+                      {item.assignee_name && (
+                        <div style={{ display: 'flex', alignItems: 'center', fontSize: 13, color: '#8c8c8c' }}>
+                          <div style={{ 
+                            width: 20, height: 20, borderRadius: '50%', background: '#e6f4ff', color: '#1677ff', 
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 6, fontSize: 12, fontWeight: 'bold'
+                          }}>
+                            {item.assignee_name.charAt(0).toUpperCase()}
+                          </div>
+                          {item.assignee_name}
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -175,6 +199,14 @@ export default function Board() {
           ))}
         </div>
       </Content>
+
+      {selectedItemId !== null && (
+        <ItemModal 
+          itemId={selectedItemId} 
+          onClose={() => setSelectedItemId(null)} 
+          onRefresh={loadBoard} 
+        />
+      )}
     </Layout>
   )
 }

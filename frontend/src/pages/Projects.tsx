@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Layout, Button, Input, List, Typography, message, Space, Card, Dropdown, Modal, Form, Switch, Tag } from 'antd'
-import { PlusOutlined, LogoutOutlined, ProjectOutlined, MoreOutlined, DeleteOutlined, InboxOutlined, CheckCircleOutlined } from '@ant-design/icons'
+import { PlusOutlined, LogoutOutlined, ProjectOutlined, MoreOutlined, DeleteOutlined, InboxOutlined, CheckCircleOutlined, UserOutlined } from '@ant-design/icons'
 import { getProjects, createProject, deleteProject, archiveProject } from '../api/projects'
 import { useAuth } from '../store/auth'
 import type { Project } from '../types'
@@ -12,7 +12,7 @@ const { Title, Text } = Typography
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
-  const [showArchived, setShowArchived] = useState(false) // 👈 是否查看归档
+  const [showArchived, setShowArchived] = useState(false)
   
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -53,7 +53,6 @@ export default function Projects() {
     }
   }
 
-  // 处理归档/取消归档
   const handleArchive = async (e: React.MouseEvent, projectId: number, currentStatus: boolean) => {
     e.stopPropagation()
     try {
@@ -90,6 +89,9 @@ export default function Projects() {
       <Header style={{ background: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 32px', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
         <div style={{ fontSize: 20, fontWeight: 'bold', color: '#4f46e5' }}>DevFlow</div>
         <Space>
+          <Button type="primary" ghost icon={<UserOutlined />} onClick={() => navigate('/my-tasks')}>
+            我的工作台
+          </Button>
           <Text>欢迎，{user?.username}</Text>
           <Button type="text" icon={<LogoutOutlined />} onClick={() => { logout(); navigate('/login') }}>
             退出

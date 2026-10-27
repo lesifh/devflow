@@ -1,6 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState } from 'react'
+import { Modal, Form, Input, Select, Button, Space, message } from 'antd'
 import { getWorkItem, updateWorkItem, deleteWorkItem } from '../api/items'
-import type { WorkItem, WorkItemPriority } from '../types'
+import { getUsers } from '../api/auth'
+import type { WorkItem, User } from '../types'
+
+const { TextArea } = Input
 
 interface Props {
   itemId: number
@@ -11,111 +15,129 @@ interface Props {
 export default function ItemModal({ itemId, onClose, onRefresh }: Props) {
   const [item, setItem] = useState<WorkItem | null>(null)
   const [loading, setLoading] = useState(true)
-
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [priority, setPriority] = useState<WorkItemPriority>('medium')
+  const [users, setUsers] = useState<User[]>([])
+  const [form] = Form.useForm()
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await getWorkItem(itemId)
+        const [data, u] = await Promise.all([
+          getWorkItem(itemId),
+          getUsers()
+        ])
         setItem(data)
-        setTitle(data.title)
-        setDescription(data.description || '')
-        setPriority(data.priority)
+        setUsers(u)
+        
+        // 👈 强制绑定，如果 data.assignee_id 是 null，也会被正确设置为空
+        form.setFieldsValue({
+          title: data.title,
+          description: data.description,
+          priority: data.priority,
+          status: data.status,
+          assignee_id: data.assignee_id || undefined 
+        })
       } catch (err) {
-        alert('获取详情失败')
+        message.error('获取详情失败')
         onClose()
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [itemId])
+  }, [itemId, form, onClose])
 
-  async function handleSave(e: FormEvent) {
-    e.preventDefault()
+  async function handleSave(values: any) {
+    setSaving(true)
     try {
-      await updateWorkItem(itemId, { title, description, priority })
+      await updateWorkItem(itemId, {
+        ...values,
+        assignee_id: values.assignee_id || null 
+      })
+      message.success('保存成功')
       onRefresh()
       onClose()
     } catch (err) {
-      alert('保存失败')
+      message.error('保存失败')
+    } finally {
+      setSaving(false)
     }
   }
 
   async function handleDelete() {
-    if (!confirm('确定要删除这个工作项吗？')) return
-    try {
-      await deleteWorkItem(itemId)
-      onRefresh()
-      onClose()
-    } catch (err) {
-      alert('删除失败')
-    }
+    Modal.confirm({
+      title: '确认删除？',
+      content: '删除后无法恢复。',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          await deleteWorkItem(itemId)
+          message.success('已删除')
+          onRefresh()
+          onClose()
+        } catch (err) {
+          message.error('删除失败')
+        }
+      }
+    })
   }
 
   if (loading || !item) return null
 
   return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
-    }}>
-      <div style={{ background: '#fff', padding: 24, borderRadius: 8, width: 500, maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h2 style={{ margin: 0 }}>工作项详情</h2>
-          <button onClick={onClose} style={{ border: 'none', background: 'transparent', fontSize: 18, cursor: 'pointer' }}>✕</button>
+    <Modal
+      title="工作项详情"
+      open={true}
+      onCancel={onClose}
+      footer={null}
+      width={600}
+      destroyOnClose
+    >
+      <Form form={form} layout="vertical" onFinish={handleSave} style={{ marginTop: 20 }}>
+        <Form.Item name="title" label="标题" rules={[{ required: true }]}>
+          <Input size="large" />
+        </Form.Item>
+
+        <div style={{ display: 'flex', gap: 16 }}>
+          <Form.Item name="status" label="状态" style={{ flex: 1 }}>
+            <Select size="large">
+              <Select.Option value="todo">待办 (To Do)</Select.Option>
+              <Select.Option value="doing">进行中 (Doing)</Select.Option>
+              <Select.Option value="review">待验证 (Review)</Select.Option>
+              <Select.Option value="done">已完成 (Done)</Select.Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item name="priority" label="优先级" style={{ flex: 1 }}>
+            <Select size="large">
+              <Select.Option value="low">低 (Low)</Select.Option>
+              <Select.Option value="medium">中 (Medium)</Select.Option>
+              <Select.Option value="high">高 (High)</Select.Option>
+            </Select>
+          </Form.Item>
+
+          {/* 👈 指派给 */}
+          <Form.Item name="assignee_id" label="指派给" style={{ flex: 1 }}>
+            <Select size="large" allowClear placeholder="未指派">
+              {users.map(u => (
+                <Select.Option key={u.id} value={u.id}>{u.username}</Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
         </div>
 
-        <form onSubmit={handleSave}>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>标题</label>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
-            />
-          </div>
+        <Form.Item name="description" label="描述">
+          <TextArea rows={5} placeholder="补充详细描述..." />
+        </Form.Item>
 
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>优先级</label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as WorkItemPriority)}
-              style={{ width: '100%', padding: 8 }}
-            >
-              <option value="low">低 (Low)</option>
-              <option value="medium">中 (Medium)</option>
-              <option value="high">高 (High)</option>
-            </select>
-          </div>
-
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>描述</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={5}
-              style={{ width: '100%', padding: 8, boxSizing: 'border-box', resize: 'vertical' }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <button type="button" onClick={handleDelete} style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
-              删除
-            </button>
-            <div>
-              <button type="button" onClick={onClose} style={{ padding: '8px 16px', marginRight: 10 }}>取消</button>
-              <button type="submit" style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
-                保存修改
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
+          <Button danger type="text" onClick={handleDelete}>删除工作项</Button>
+          <Space>
+            <Button onClick={onClose}>取消</Button>
+            <Button type="primary" htmlType="submit" loading={saving}>保存</Button>
+          </Space>
+        </div>
+      </Form>
+    </Modal>
   )
 }

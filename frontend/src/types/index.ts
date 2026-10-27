@@ -8,7 +8,7 @@ export interface Project {
   name: string
   description: string | null
   owner_id: number
-  is_archived: boolean // 👈 新增
+  is_archived: boolean
   created_at: string
 }
 

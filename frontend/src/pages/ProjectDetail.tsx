@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Layout, Button, Input, Typography, message, Space, Card, List, Tag, Empty } from 'antd'
-import { ArrowLeftOutlined, PlusOutlined, CalendarOutlined } from '@ant-design/icons'
+import { Layout, Button, Input, Typography, message, Space, Card, List, Tag, Empty, Dropdown } from 'antd'
+import { ArrowLeftOutlined, PlusOutlined, MoreOutlined, PlayCircleOutlined, StopOutlined } from '@ant-design/icons'
 import { getSprints, createSprint } from '../api/sprints'
 import client from '../api/client'
 import type { Sprint, Project } from '../types'
@@ -61,6 +61,17 @@ export default function ProjectDetail() {
     }
   }
 
+  async function handleUpdateStatus(e: React.MouseEvent, sprintId: number, newStatus: string) {
+    e.stopPropagation()
+    try {
+      await client.put(`/sprints/${sprintId}`, { status: newStatus })
+      message.success('迭代状态已更新')
+      loadSprints()
+    } catch (err) {
+      message.error('更新状态失败')
+    }
+  }
+
   return (
     <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
       <Header style={{ background: '#fff', display: 'flex', alignItems: 'center', padding: '0 32px', boxShadow: '0 1px 4px rgba(0,0,0,0.05)', gap: 16 }}>
@@ -68,7 +79,6 @@ export default function ProjectDetail() {
         <Title level={4} style={{ margin: 0 }}>{project?.name || '加载中...'}</Title>
       </Header>
 
-      {/* 放大了 maxWidth，让页面更宽 */}
       <Content style={{ padding: '32px 48px', maxWidth: 1400, margin: '0 auto', width: '100%' }}>
         {project && (
           <Card style={{ marginBottom: 32, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -106,27 +116,54 @@ export default function ProjectDetail() {
                 <Card 
                   hoverable 
                   onClick={() => navigate(`/projects/${projectId}/sprints/${item.id}`)}
-                  style={{ borderRadius: 8, borderLeft: '4px solid #4f46e5', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+                  style={{ 
+                    borderRadius: 8, 
+                    borderLeft: item.status === 'active' ? '4px solid #52c41a' : '4px solid #d9d9d9',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    opacity: item.status === 'closed' ? 0.6 : 1
+                  }}
                 >
-                  <Card.Meta 
-                    title={<span style={{ fontSize: 18 }}>{item.name}</span>}
-                    description={
-                      <div style={{ marginTop: 12 }}>
-                        <Paragraph ellipsis={{ rows: 2 }}>{item.goal || '无具体目标'}</Paragraph>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-                          <Tag color={
-                            item.status === 'active' ? 'processing' : 
-                            item.status === 'closed' ? 'default' : 'warning'
-                          }>
-                            {item.status === 'planning' ? '计划中' : item.status === 'active' ? '进行中' : '已关闭'}
-                          </Tag>
-                          <Text type="secondary" style={{ fontSize: 13 }}>
-                            进入看板 →
-                          </Text>
-                        </div>
-                      </div>
-                    } 
-                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Card.Meta 
+                      title={<span style={{ fontSize: 18 }}>{item.name}</span>}
+                      style={{ flex: 1 }}
+                    />
+                    <Dropdown
+                      menu={{
+                        items: [
+                          {
+                            key: 'active',
+                            label: '重新开启',
+                            icon: <PlayCircleOutlined style={{ color: '#52c41a' }} />,
+                            disabled: item.status === 'active',
+                            onClick: (e) => handleUpdateStatus(e.domEvent as React.MouseEvent, item.id, 'active'),
+                          },
+                          {
+                            key: 'closed',
+                            label: '结束迭代',
+                            icon: <StopOutlined style={{ color: '#ff4d4f' }} />,
+                            disabled: item.status === 'closed',
+                            onClick: (e) => handleUpdateStatus(e.domEvent as React.MouseEvent, item.id, 'closed'),
+                          },
+                        ],
+                      }}
+                      trigger={['click']}
+                    >
+                      <Button type="text" icon={<MoreOutlined />} onClick={e => e.stopPropagation()} />
+                    </Dropdown>
+                  </div>
+
+                  <div style={{ marginTop: 12 }}>
+                    <Paragraph ellipsis={{ rows: 2 }}>{item.goal || '无具体目标'}</Paragraph>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+                      <Tag color={item.status === 'active' ? 'success' : 'default'}>
+                        {item.status === 'active' ? '进行中' : '已结束'}
+                      </Tag>
+                      <Text type="secondary" style={{ fontSize: 13 }}>
+                        进入看板 →
+                      </Text>
+                    </div>
+                  </div>
                 </Card>
               </List.Item>
             )}

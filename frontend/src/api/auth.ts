@@ -15,3 +15,8 @@ export async function getMe(): Promise<User> {
   const res = await client.get<User>('/auth/me')
   return res.data
 }
+
+export async function getUsers(): Promise<User[]> {
+  const res = await client.get<User[]>('/auth/users')
+  return res.data
+}
