@@ -5,7 +5,7 @@ import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons'
 import { getBoard, createWorkItem, updateWorkItem } from '../api/items'
 import { getUsers } from '../api/auth'
 import ItemModal from '../components/ItemModal'
-import type { Board as BoardType, User } from '../types'
+import type { Board as BoardType, User, WorkItemStatus } from '../types'
 
 const { Header, Content } = Layout
 const { Title } = Typography
@@ -17,8 +17,7 @@ export default function Board() {
   const navigate = useNavigate()
 
   const [board, setBoard] = useState<BoardType>({ todo: [], doing: [], review: [], done: [] })
-  const [loading, setLoading] = useState(true)
-  
+  // 👈 删掉了没用的 loading 状态
   const [title, setTitle] = useState('')
   const [type, setType] = useState('task')
   const [assigneeId, setAssigneeId] = useState<number | undefined>(undefined)
@@ -32,8 +31,6 @@ export default function Board() {
       setBoard(data)
     } catch (err) {
       message.error('获取看板失败')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -88,7 +85,8 @@ export default function Board() {
     })
 
     try {
-      await updateWorkItem(itemId, { status: newStatus })
+      // 👈 强制类型转换，解决 TS 报错
+      await updateWorkItem(itemId, { status: newStatus as WorkItemStatus })
     } catch (err) {
       message.error('更新失败，请刷新')
       loadBoard()

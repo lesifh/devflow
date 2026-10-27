@@ -4,14 +4,13 @@ import { Layout, Card, Typography, Tag, Button, message, Empty, Space, Tabs } fr
 import { LogoutOutlined, ArrowRightOutlined, CheckOutlined, LeftOutlined } from '@ant-design/icons'
 import { getMyTasks, updateWorkItem } from '../api/items'
 import { useAuth } from '../store/auth'
-import type { WorkItem } from '../types'
+import type { WorkItem, WorkItemStatus } from '../types'
 
 const { Header, Content } = Layout
 const { Title, Text, Paragraph } = Typography
 
 export default function MyTasks() {
   const [tasks, setTasks] = useState<WorkItem[]>([])
-  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
   
   const user = useAuth((s) => s.user)
@@ -23,8 +22,6 @@ export default function MyTasks() {
       setTasks(data)
     } catch (err) {
       console.error(err)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -32,10 +29,10 @@ export default function MyTasks() {
     load()
   }, [])
 
-  // 改变任务状态
   async function handleStatusChange(itemId: number, newStatus: string) {
     try {
-      await updateWorkItem(itemId, { status: newStatus })
+      // 👈 强制类型转换
+      await updateWorkItem(itemId, { status: newStatus as WorkItemStatus })
       message.success('状态更新成功')
       load()
     } catch (err) {
@@ -43,7 +40,6 @@ export default function MyTasks() {
     }
   }
 
-  // 按状态分类
   const todoTasks = tasks.filter(t => t.status === 'todo')
   const doingTasks = tasks.filter(t => t.status === 'doing')
   const reviewTasks = tasks.filter(t => t.status === 'review')

@@ -9,10 +9,12 @@ export async function getBoard(projectId: number, sprintId?: number): Promise<Bo
   return res.data
 }
 
+// 👈 补上了 assignee_id
 export async function createWorkItem(projectId: number, data: { 
   title: string
   type: string
   sprint_id?: number
+  assignee_id?: number
 }): Promise<WorkItem> {
   const res = await client.post<WorkItem>(`/projects/${projectId}/items`, data)
   return res.data
